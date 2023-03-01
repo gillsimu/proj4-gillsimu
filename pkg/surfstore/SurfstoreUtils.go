@@ -107,7 +107,6 @@ func ClientSync(client RPCClient) {
 		log.Println("Error while getting server file info map", err)
 	}
 
-	// TODO handle delete and then file creation
 	log.Println("**************clientFileInfoMap after reconciling with serverFileInfoMap for update/new/delete file***************")
 	PrintMetaMap(clientFileInfoMap)
 	log.Println("*******************************************")

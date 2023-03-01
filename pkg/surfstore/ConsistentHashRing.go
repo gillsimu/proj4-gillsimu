@@ -3,15 +3,21 @@ package surfstore
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"sort"
 )
 
 type ConsistentHashRing struct {
 	ServerMap map[string]string
+	Hashes []string
 }
 
 func (c ConsistentHashRing) GetResponsibleServer(blockId string) string {
-	blockHash := c.Hash(blockId)
-	return c.ServerMap[blockHash]
+	for _, h := range c.Hashes{
+		if h > blockId {
+			return c.ServerMap[h]
+		}
+	}
+	return c.ServerMap[c.Hashes[0]]
 }
 
 func (c ConsistentHashRing) Hash(addr string) string {
@@ -20,15 +26,18 @@ func (c ConsistentHashRing) Hash(addr string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func NewConsistentHashRing(serverAddrs []string) *ConsistentHashRing {
+func NewConsistentHashRing(serverAddrs []string) *ConsistentHashRing {	// server name: "blockstore" + serverAddr
 	// hash servers on hash ring
 	var c ConsistentHashRing
 	serverMap := make(map[string]string)	// hash: serverName
+	hashes := []string{}
 	for _, serverName :=  range serverAddrs {
 		serverHash := c.Hash(serverName);
 		serverMap[serverHash] = serverName
+		hashes = append(hashes, serverHash)
 	}
-
+	sort.Strings(hashes)
+	c.Hashes = hashes
 	c.ServerMap = serverMap
 	return &c
 }

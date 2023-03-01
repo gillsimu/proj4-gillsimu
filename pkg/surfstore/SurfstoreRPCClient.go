@@ -132,15 +132,81 @@ func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersio
 
 
 func (surfClient *RPCClient) GetBlockHashes(blockStoreAddr string, blockHashes *[]string) error {
-	panic("todo")
+	// connect to the server
+	conn, err := grpc.Dial(blockStoreAddr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	c := NewBlockStoreClient(conn)
+	// perform the call
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	
+	b, err := c.GetBlockHashes(ctx, &emptypb.Empty{})
+	if err != nil {
+		conn.Close()
+		return err
+	}
+	
+	*blockHashes = b.Hashes
+
+	// close the connection
+	return conn.Close()
 }
 
 func (surfClient *RPCClient) GetBlockStoreMap(blockHashesIn []string, blockStoreMap *map[string][]string) error {
-	panic("todo")
+	// connect to the server
+	conn, err := grpc.Dial(surfClient.MetaStoreAddr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	c := NewMetaStoreClient(conn)
+	// perform the call
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	tempBlockHash := BlockHashes{
+		Hashes: blockHashesIn,
+	}
+	b, err := c.GetBlockStoreMap(ctx, &tempBlockHash)
+	if err != nil {
+		conn.Close()
+		return err
+	}
+	
+	m := make(map[string][]string)
+
+	for key, val := range b.BlockStoreMap {
+		hashes := []string{}
+		for _, v := range val.Hashes {
+			hashes = append(hashes, v)
+		}
+		m[key] = hashes
+	}
+	*blockStoreMap = m
+
+	// close the connection
+	return conn.Close()
 }
 
 func (surfClient *RPCClient) GetBlockStoreAddrs(blockStoreAddrs *[]string) error {
-	panic("todo")
+	// connect to the server
+	conn, err := grpc.Dial(surfClient.MetaStoreAddr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	c := NewMetaStoreClient(conn)
+	// perform the call
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	b, err := c.GetBlockStoreAddrs(ctx, &emptypb.Empty{})
+	if err != nil {
+		conn.Close()
+		return err
+	}
+	*blockStoreAddrs = b.BlockStoreAddrs
+
+	// close the connection
+	return conn.Close()
 }
 
 

@@ -4,6 +4,8 @@ import (
 	context "context"
 	"fmt"
 	"sync"
+
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 //The content of each file in SurfStore is divided up into chunks, or blocks, each of which has a unique identifier.
@@ -24,7 +26,6 @@ func (bs *BlockStore) InvokeUnLock(ctx context.Context) {
 }
 
 func (bs *BlockStore) GetBlock(ctx context.Context, blockHash *BlockHash) (*Block, error) {
-	// TODO: put file versioning or mutex
 	bs.InvokeLock(ctx);
 	uid := blockHash.GetHash();
 	if val, found := bs.BlockMap[uid]; found {
@@ -36,7 +37,6 @@ func (bs *BlockStore) GetBlock(ctx context.Context, blockHash *BlockHash) (*Bloc
 }
 
 func (bs *BlockStore) PutBlock(ctx context.Context, block *Block) (*Success, error) {
-	// TODO: put file versioning or mutex
 	bs.InvokeLock(ctx);
 	bs.BlockMap[GetBlockHashString(block.BlockData)] =  block
 	bs.InvokeUnLock(ctx);
@@ -46,7 +46,6 @@ func (bs *BlockStore) PutBlock(ctx context.Context, block *Block) (*Success, err
 // Given a list of hashes “in”, returns a list containing the
 // subset of in that are stored in the key-value store
 func (bs *BlockStore) HasBlocks(ctx context.Context, blockHashesIn *BlockHashes) (*BlockHashes, error) {
-	// TODO: put file versioning or mutex
 	bs.InvokeLock(ctx);
 	subsetHashes := []string{}
 	for _, hash := range blockHashesIn.Hashes {
@@ -61,7 +60,11 @@ func (bs *BlockStore) HasBlocks(ctx context.Context, blockHashesIn *BlockHashes)
 
 // Return a list containing all blockHashes on this block server
 func (bs *BlockStore) GetBlockHashes(ctx context.Context, _ *emptypb.Empty) (*BlockHashes, error) {
-	panic("todo")
+	subsetBlockHashes := []string{}
+	for hash := range bs.BlockMap {
+		subsetBlockHashes = append(subsetBlockHashes, hash)
+	}
+	return &BlockHashes{Hashes: subsetBlockHashes}, nil
 }
 
 // This line guarantees all method for BlockStore are implemented

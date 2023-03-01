@@ -39,16 +39,17 @@ func main() {
 	service := flag.String("s", "", "(required) Service Type of the Server: meta, block, both")
 	port := flag.Int("p", 8080, "(default = 8080) Port to accept connections")
 	localOnly := flag.Bool("l", false, "Only listen on localhost")
-	debug := flag.Bool("d", false, "Output log statements")
+	debug := flag.Bool("d", true, "Output log statements")
 	flag.Parse()
 
 	// Use tail arguments to hold BlockStore address
 	args := flag.Args()
-	blockStoreAddr := ""
-	if len(args) == 1 {
-		blockStoreAddr = args[0]
-	}
+	blockStoreAddrs := []string{}
 
+	for i:=0; i < len(args); i++{
+		blockStoreAddrs = append(blockStoreAddrs, args[i])
+	}
+	
 	// Valid service type argument
 	if _, ok := SERVICE_TYPES[strings.ToLower(*service)]; !ok {
 		flag.Usage()
@@ -67,10 +68,11 @@ func main() {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
 	}
-	log.Fatal(startServer(addr, strings.ToLower(*service), blockStoreAddr))
+	log.Println("addr:",addr," service:",service, "blockStoreAddrs:", blockStoreAddrs)
+	log.Fatal(startServer(addr, strings.ToLower(*service), blockStoreAddrs))
 }
 
-func startServer(hostAddr string, serviceType string, blockStoreAddr string) error {
+func startServer(hostAddr string, serviceType string, blockStoreAddrs []string) error {
 	log.Println("Starting servers")
 	//Step 1 : Create a new Server
 	grpcServer := grpc.NewServer()
@@ -81,7 +83,7 @@ func startServer(hostAddr string, serviceType string, blockStoreAddr string) err
 		log.Println("Server started for Block on: ", hostAddr )
 	}
 	if serviceType == "meta" || serviceType == "both" {
-		surfstore.RegisterMetaStoreServer(grpcServer, surfstore.NewMetaStore(blockStoreAddr))
+		surfstore.RegisterMetaStoreServer(grpcServer, surfstore.NewMetaStore(blockStoreAddrs))
 		log.Println("Server started for Meta on: ", hostAddr )
 	}
 

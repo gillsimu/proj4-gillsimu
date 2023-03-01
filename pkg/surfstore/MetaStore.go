@@ -35,7 +35,6 @@ func (m *MetaStore) GetFileInfoMap(ctx context.Context, _ *emptypb.Empty) (*File
 }
 
 func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) (*Version, error) {
-	// TODO: put file versioning or mutex
 	m.InvokeLock(ctx);
 	filename := fileMetaData.Filename
 	newVersion := fileMetaData.Version
@@ -60,11 +59,22 @@ func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) 
 }
 
 func (m *MetaStore) GetBlockStoreMap(ctx context.Context, blockHashesIn *BlockHashes) (*BlockStoreMap, error) {
-	panic("todo")
+	blockStoreMap := make(map[string]*BlockHashes )
+
+	for _, hash := range blockHashesIn.Hashes{
+		server := m.ConsistentHashRing.GetResponsibleServer(hash)
+		_, found := blockStoreMap[server]
+		if !found {
+			blockStoreMap[server] = &BlockHashes{}
+		}
+		blockStoreMap[server].Hashes = append(blockStoreMap[server].Hashes, hash)
+	}
+
+	return &BlockStoreMap{BlockStoreMap: blockStoreMap}, nil
 }
 
 func (m *MetaStore) GetBlockStoreAddrs(ctx context.Context, _ *emptypb.Empty) (*BlockStoreAddrs, error) {
-	panic("todo")
+	return &BlockStoreAddrs{BlockStoreAddrs: m.BlockStoreAddrs}, nil
 }
 
 // This line guarantees all method for MetaStore are implemented

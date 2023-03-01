@@ -37,10 +37,10 @@ func getNumberOfBlocks( filePath string, blockSize int) int {
 }
 
 func ServerFileUpload(clientMetaData *FileMetaData, filePath string, client RPCClient) error {
-	var blockAddr string
+	var blockStoreAddrs []string
 	var newVersion int32
 	blockSize := client.BlockSize
-	err := client.GetBlockStoreAddr(&blockAddr)
+	err := client.GetBlockStoreAddrs(&blockStoreAddrs)
 	if err != nil {
 		log.Println("Error while getting block store address", err)
 		return err
@@ -70,7 +70,8 @@ func ServerFileUpload(clientMetaData *FileMetaData, filePath string, client RPCC
 		}
 
 		var succ bool
-		err := client.PutBlock(&block, blockAddr, &succ)
+		//todo: fix this
+		err := client.PutBlock(&block, blockStoreAddrs[0], &succ)
 		if err != nil {
 			log.Println("Failed to put block: ", err)
 		}
@@ -314,8 +315,8 @@ func IsDeleted(metaData *FileMetaData) bool {
 }
 
 func ClientFileDownload(serverMetaData *FileMetaData,  clientMetaData *FileMetaData, filePath string, client RPCClient) error {
-	var blockAddr string
-	err := client.GetBlockStoreAddr(&blockAddr)
+	var blockStoreAddrs []string
+	err := client.GetBlockStoreAddrs(&blockStoreAddrs)
 	if err != nil {
 		log.Println("Error while getting block store address", err)
 		return err
@@ -345,7 +346,8 @@ func ClientFileDownload(serverMetaData *FileMetaData,  clientMetaData *FileMetaD
 	writeToFileData := ""
 	for _, metaDataHash := range serverMetaData.BlockHashList {
 		var metaDataBlock Block
-		if err := client.GetBlock(metaDataHash, blockAddr, &metaDataBlock); err != nil{
+		//Todo: fix 
+		if err := client.GetBlock(metaDataHash, blockStoreAddrs[0], &metaDataBlock); err != nil{
 			log.Println("Error while getting block: ", err)
 			return err
 		}
