@@ -32,7 +32,7 @@ func NewConsistentHashRing(serverAddrs []string) *ConsistentHashRing {	// server
 	serverMap := make(map[string]string)	// hash: serverName
 	hashes := []string{}
 	for _, serverName :=  range serverAddrs {
-		serverHash := c.Hash(serverName);
+		serverHash := c.Hash("blockstore" + serverName);
 		serverMap[serverHash] = serverName
 		hashes = append(hashes, serverHash)
 	}
