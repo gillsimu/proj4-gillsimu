@@ -348,7 +348,9 @@ func ClientFileDownload(serverMetaData *FileMetaData,  clientMetaData *FileMetaD
 	*clientMetaData = *serverMetaData
 
 	var blockStoreMap map[string][]string
+	log.Println("Fetching the servers for each block hash")
 	client.GetBlockStoreMap(blockHashesIn, &blockStoreMap)
+	log.Println("Fetched the servers for each block hash->", blockStoreMap)
 
 	// if file is deleted
 	if IsDeleted(clientMetaData) {
