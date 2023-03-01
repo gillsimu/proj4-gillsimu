@@ -59,6 +59,9 @@ func ServerFileUpload(clientMetaData *FileMetaData, filePath string, client RPCC
 	defer file.Close()
 
 	blocks := getNumberOfBlocks(filePath, blockSize)
+	hashes := []string{}
+
+	hashAndBlock := make(map[string] Block)
 
 	for i:=0; i<blocks; i++ {
 		data := make([]byte, blockSize)
@@ -68,12 +71,22 @@ func ServerFileUpload(clientMetaData *FileMetaData, filePath string, client RPCC
 			BlockSize: int32(bytesRead),
 			BlockData: finaldata, 
 		}
+		hashes = append(hashes, GetBlockHashString(block.BlockData))
+		hashAndBlock[GetBlockHashString(block.BlockData)] = block
+		
+	}
 
-		var succ bool
-		//todo: fix this
-		err := client.PutBlock(&block, blockStoreAddrs[0], &succ)
-		if err != nil {
-			log.Println("Failed to put block: ", err)
+	var blockStoreMap map[string][]string
+	client.GetBlockStoreMap(hashes, &blockStoreMap)
+
+	for server, hashes := range blockStoreMap{
+		for _, hash := range hashes {
+			metaDataBlock := hashAndBlock[hash]
+			var succ bool
+			err := client.PutBlock(&metaDataBlock, server, &succ)
+			if err != nil {
+				log.Println("Failed to put block: ", err)
+			}
 		}
 	}
 
@@ -316,7 +329,9 @@ func IsDeleted(metaData *FileMetaData) bool {
 
 func ClientFileDownload(serverMetaData *FileMetaData,  clientMetaData *FileMetaData, filePath string, client RPCClient) error {
 	var blockStoreAddrs []string
+	
 	err := client.GetBlockStoreAddrs(&blockStoreAddrs)
+	
 	if err != nil {
 		log.Println("Error while getting block store address", err)
 		return err
@@ -329,7 +344,11 @@ func ClientFileDownload(serverMetaData *FileMetaData,  clientMetaData *FileMetaD
 		return err
     }
     defer newfile.Close()
+	blockHashesIn := serverMetaData.BlockHashList
 	*clientMetaData = *serverMetaData
+
+	var blockStoreMap map[string][]string
+	client.GetBlockStoreMap(blockHashesIn, &blockStoreMap)
 
 	// if file is deleted
 	if IsDeleted(clientMetaData) {
@@ -344,14 +363,22 @@ func ClientFileDownload(serverMetaData *FileMetaData,  clientMetaData *FileMetaD
 	
 	log.Println("Downloading file: ", serverMetaData.BlockHashList)
 	writeToFileData := ""
-	for _, metaDataHash := range serverMetaData.BlockHashList {
-		var metaDataBlock Block
-		//Todo: fix 
-		if err := client.GetBlock(metaDataHash, blockStoreAddrs[0], &metaDataBlock); err != nil{
-			log.Println("Error while getting block: ", err)
-			return err
+
+	metaDataAndBlockMap := make(map[string]Block)
+
+	for server, hashes := range blockStoreMap{
+		for _, hash := range hashes {
+			var metaDataBlock Block
+			if err := client.GetBlock(hash, server, &metaDataBlock); err != nil{
+				log.Println("Error while getting block: ", err)
+				return err
+			}
+			metaDataAndBlockMap[hash] = metaDataBlock
 		}
-		writeToFileData += string(metaDataBlock.BlockData)
+	}
+
+	for _, metaDataHash := range serverMetaData.BlockHashList {
+		writeToFileData += string(metaDataAndBlockMap[metaDataHash].BlockData)
 	}
 	newfile.WriteString(writeToFileData)
 	return nil
