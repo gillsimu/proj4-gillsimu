@@ -77,7 +77,10 @@ func ServerFileUpload(clientMetaData *FileMetaData, filePath string, client RPCC
 	}
 
 	var blockStoreMap map[string][]string
+	log.Println("Fetching the servers for each block hash")
 	client.GetBlockStoreMap(hashes, &blockStoreMap)
+	log.Println("Fetched the servers for each block hash->", blockStoreMap)
+	
 
 	for server, hashes := range blockStoreMap{
 		for _, hash := range hashes {
